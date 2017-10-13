@@ -15,7 +15,7 @@ class Alert(object):
         self._id = uuid.uuid4().hex if _id is None else _id
 
     def __repr__(self):
-        return "<Alert for {} on the item {} with the price {}> ".format(self.user.email, self.item.name, self.price_limit)
+        return "<Alert for {} on the item {} with the price {}> ".format(self.user_email, self.item.name, self.price_limit)
 
     def send(self):
         return requests.post(
@@ -23,7 +23,7 @@ class Alert(object):
             auth=("api", AlertConstants.API_KEY),
             data={
                 "from": AlertConstants.FROM,
-                "to": self.user.email,
+                "to": self.user_email,
                 "subject": "Price limit reached for {}".format(self.item.name),
                 "text": "We've found a deal! (link here)"
             }
@@ -34,11 +34,11 @@ class Alert(object):
         last_updated_limit = datetime.datetime.utcnow() - datetime.timedelta(minutes=minutes_since_update)
         return [cls(**elem) for elem in Database.find(AlertConstants.COLLECTION,
                                                       {"last_checked":
-                                                           {"$gte": last_updated_limit}
+                                                           {"$lte": last_updated_limit}
                                                        })]
 
     def save_to_mongo(self):
-        Database.insert(AlertConstants.COLLECTION, self.json())
+        Database.update(AlertConstants.COLLECTION, {"_id": self._id}, self.json())
 
     def json(self):
         return {
@@ -48,3 +48,23 @@ class Alert(object):
             "user_email": self.user_email,
             "item_id": self.item._id
         }
+
+    def load_item_price(self):
+        self.item.load_price()
+        self.last_checked = datetime.datetime.utcnow()
+        self.item.save_to_mongo()
+        self.save_to_mongo()
+        return self.item.price
+
+    def send_email_if_price_reached(self):
+        if self.item.price < self.price_limit:
+            self.send()
+
+    @classmethod
+    def find_by_user_email(cls, user_email):
+        return [cls(**elem) for elem in Database.find(AlertConstants.COLLECTION, {'user_email': user_email})]
+
+    @classmethod
+    def find_by_id(cls, alert_id):
+        return cls(**Database.find_one(AlertConstants.COLLECTION, {'_id': alert_id}))
+
