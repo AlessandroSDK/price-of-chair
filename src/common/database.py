@@ -5,8 +5,7 @@ __author__ = "Alessandro"
 
 
 class Database(object):
-    URI = os.environ.get("MONGOLAB_URI")
-    DATABASE = None
+    URI = os.environ.get("MONGODB_URI")
 
     @staticmethod
     def initialize():
