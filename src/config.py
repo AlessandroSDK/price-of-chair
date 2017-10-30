@@ -2,5 +2,5 @@
 
 DEBUG = True
 ADMINS = frozenset([
-    "alex@ticoop.it"
+    "alessandro.bresciani2016@gmail.com"
 ])

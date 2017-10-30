@@ -6,11 +6,6 @@ import src.models.users.decorators as user_decorators
 alert_blueprint = Blueprint('alerts', __name__)
 
 
-@alert_blueprint.route('/')
-def index():
-    return "This is the alerts index"
-
-
 @alert_blueprint.route('/new', methods=['GET', 'POST'])
 @user_decorators.requires_login
 def create_alert():
@@ -25,6 +20,20 @@ def create_alert():
         alert.load_item_price()
 
     return render_template('alerts/new_alert.jinja2')
+
+
+@alert_blueprint.route('/edit/<string:alert_id>', methods=['GET', 'POST'])
+@user_decorators.requires_login
+def edit_alert(alert_id):
+    alert = Alert.find_by_id(alert_id)
+    if request.method == 'POST':
+        price_limit = float(request.form['price_limit'])
+
+        alert.price_limit = price_limit
+        alert.save_to_mongo()
+
+        return redirect(url_for('users.user_alerts'))
+    return render_template('alerts/edit_alert.jinja2', alert=alert)
 
 
 @alert_blueprint.route('/deactivate/<string:alert_id>')
